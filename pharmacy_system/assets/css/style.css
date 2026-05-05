@@ -1,0 +1,247 @@
+/* Pharmacy Management System Styles */
+:root {
+    --brand-primary: #0d6efd;
+    --brand-secondary: #198754;
+    --brand-accent: #20c997;
+    --brand-dark: #0a1929;
+}
+
+body {
+    background: #f4f6fa;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ============================================================
+   Sidebar layout
+   ============================================================ */
+:root { --sidebar-width: 250px; --topbar-height: 56px; }
+
+.app-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.app-sidebar {
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+    background: linear-gradient(180deg, #0a4d68 0%, #088395 100%);
+    color: #e8f4f8;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 1030;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.08);
+    overflow-y: auto;
+}
+
+.sidebar-brand {
+    padding: 1.1rem 1.25rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.sidebar-brand a { font-size: 1.1rem; }
+
+.sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.user-avatar { font-size: 2rem; line-height: 1; color: #b8e0e8; }
+.user-info { line-height: 1.25; min-width: 0; }
+.user-name {
+    font-weight: 600;
+    color: #fff;
+    font-size: 0.92rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.user-role .badge { font-size: 0.7rem; }
+
+.sidebar-nav {
+    list-style: none;
+    padding: 0.75rem 0;
+    margin: 0;
+    flex-grow: 1;
+}
+.sidebar-nav .nav-section-title {
+    padding: 0.85rem 1.25rem 0.35rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: rgba(255,255,255,0.5);
+    font-weight: 600;
+}
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1.25rem;
+    color: rgba(255,255,255,0.85);
+    text-decoration: none;
+    font-size: 0.93rem;
+    font-weight: 500;
+    border-left: 3px solid transparent;
+    transition: 0.15s;
+}
+.sidebar-link i { font-size: 1.1rem; width: 22px; text-align: center; }
+.sidebar-link:hover {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+}
+.sidebar-link.active {
+    background: rgba(255,255,255,0.13);
+    color: #fff;
+    border-left-color: #20c997;
+    font-weight: 600;
+}
+
+.sidebar-footer {
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+.logout-link {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: rgba(255,255,255,0.85);
+    text-decoration: none;
+    padding: 0.5rem 0.5rem;
+    border-radius: 6px;
+    transition: 0.15s;
+}
+.logout-link:hover { background: rgba(220,53,69,0.25); color: #fff; }
+
+.app-content {
+    flex-grow: 1;
+    margin-left: var(--sidebar-width);
+    min-width: 0;
+}
+
+/* Mobile top bar (shown < 768px) */
+.mobile-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #0a4d68, #088395);
+    color: #fff;
+    height: var(--topbar-height);
+    padding: 0 0.75rem;
+    position: sticky;
+    top: 0;
+    z-index: 1031;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+.mobile-topbar .brand-title { font-weight: 600; font-size: 1.05rem; }
+
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1029;
+    display: none;
+}
+.sidebar-overlay.is-visible { display: block; }
+
+@media (max-width: 767.98px) {
+    .app-sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+    }
+    .app-sidebar.is-open { transform: translateX(0); }
+    .app-content { margin-left: 0; }
+}
+
+/* Login screen */
+.login-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0a4d68 0%, #088395 50%, #20c997 100%);
+}
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+}
+
+/* Cards */
+.card { border: none; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+.card-header { background: #fff; border-bottom: 1px solid #eef0f4; font-weight: 600; }
+
+/* KPI cards */
+.kpi-card { border-left: 4px solid var(--brand-primary); padding: 1rem 1.25rem; }
+.kpi-card.success { border-left-color: var(--brand-secondary); }
+.kpi-card.warning { border-left-color: #ffc107; }
+.kpi-card.danger  { border-left-color: #dc3545; }
+.kpi-card.info    { border-left-color: var(--brand-accent); }
+.kpi-label { color: #6c757d; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-value { font-size: 1.6rem; font-weight: 700; }
+
+/* Tables */
+.table thead th {
+    background: #f8f9fb;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #5a6677;
+    border-bottom: 2px solid #e6e8ed;
+}
+.table tbody tr:hover { background: #f8fbfd; }
+
+/* Badges */
+.badge-role-admin      { background: #dc3545; }
+.badge-role-pharmacist { background: #0d6efd; }
+.badge-role-cashier    { background: #198754; }
+
+/* POS layout */
+.pos-grid {
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 1rem;
+}
+@media (max-width: 992px) { .pos-grid { grid-template-columns: 1fr; } }
+
+.pos-cart-table th, .pos-cart-table td { padding: 0.5rem; }
+.pos-cart-empty {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: #b0b8c5;
+}
+
+/* Print receipt */
+@media print {
+    body * { visibility: hidden; }
+    #receiptPrint, #receiptPrint * { visibility: visible; }
+    #receiptPrint {
+        position: absolute; top: 0; left: 0; width: 100%;
+        font-family: 'Courier New', monospace;
+    }
+    .no-print, .app-sidebar, .mobile-topbar, .sidebar-overlay { display: none !important; }
+    .app-content { margin-left: 0 !important; }
+}
+.receipt {
+    max-width: 320px;
+    margin: 0 auto;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+}
+.receipt hr { border: none; border-top: 1px dashed #888; margin: 8px 0; }
+.receipt table { width: 100%; }
+.receipt .center { text-align: center; }
+
+/* Forms */
+.form-label { font-weight: 500; color: #4a5568; }
+
+/* Search list */
+.search-result-item {
+    cursor: pointer; padding: 0.5rem 0.75rem; border-bottom: 1px solid #eef0f4;
+}
+.search-result-item:hover { background: #f0f7ff; }

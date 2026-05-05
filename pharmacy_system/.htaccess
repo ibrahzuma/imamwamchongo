@@ -1,0 +1,18 @@
+# PharmaCare Plus - Apache Config
+# Optional: provides nicer URLs and basic security
+
+# Prevent directory listing
+Options -Indexes
+
+# Default index
+DirectoryIndex index.php
+
+# Block access to sensitive directories
+<FilesMatch "\.(sql|md|log|env)$">
+    Require all denied
+</FilesMatch>
+
+# Enable rewrite engine (optional pretty URLs - disabled by default to keep ?page= routing simple)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+</IfModule>
