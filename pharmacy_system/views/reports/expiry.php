@@ -3,6 +3,10 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3><i class="bi bi-calendar-x"></i> Expiry Report</h3>
         <div>
+            <a class="btn btn-danger"
+               href="?page=reports&action=exportExpiryPdf&days=<?= (int)$days ?>" target="_blank">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
             <button onclick="window.print()" class="btn btn-primary"><i class="bi bi-printer"></i> Print</button>
             <a href="?page=reports" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
         </div>
@@ -33,20 +37,16 @@
             <span class="badge bg-warning ms-2"><?= count($medicines) ?> items</span>
         </div>
         <div class="card-body">
-            <table class="table table-striped">
+            <table class="table table-striped js-datatable" data-order='[[3,"asc"]]'>
                 <thead>
                     <tr>
-                        <th>#</th><th>Medicine</th><th>Batch</th><th>Expiry Date</th>
+                        <th class="dt-no-sort dt-no-export">#</th><th>Medicine</th><th>Batch</th><th>Expiry Date</th>
                         <th class="text-end">Days Remaining</th><th class="text-end">Stock</th>
                         <th class="text-end">Stock Value</th><th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($medicines)): ?>
-                        <tr><td colspan="8" class="text-center text-muted py-3">
-                            <i class="bi bi-check-circle text-success"></i> No medicines expiring in this period
-                        </td></tr>
-                    <?php else: $i = 1; foreach ($medicines as $m):
+                    <?php $i = 1; foreach ($medicines as $m):
                         $expiry = strtotime($m['expiry_date']);
                         $daysLeft = floor(($expiry - time()) / 86400);
                         $value = ($m['quantity'] ?? 0) * ($m['cost_price'] ?? 0);
@@ -64,7 +64,7 @@
                             <td class="text-end"><?= money($value) ?></td>
                             <td><span class="badge <?= $badge ?>"><?= $label ?></span></td>
                         </tr>
-                    <?php endforeach; endif; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>

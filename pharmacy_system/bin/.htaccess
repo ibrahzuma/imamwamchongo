@@ -1,0 +1,2 @@
+# bin/ contains the long-running WS daemon — never serve over HTTP.
+Require all denied

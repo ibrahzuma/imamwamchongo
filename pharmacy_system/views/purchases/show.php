@@ -1,7 +1,7 @@
 <?php $title = 'Purchase Details'; include __DIR__ . '/../layouts/header.php'; ?>
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3><i class="bi bi-receipt"></i> Purchase #<?= htmlspecialchars($purchase['purchase_number']) ?></h3>
+        <h3><i class="bi bi-receipt"></i> Purchase #<?= htmlspecialchars($purchase['reference_number']) ?></h3>
         <div>
             <button onclick="window.print()" class="btn btn-primary"><i class="bi bi-printer"></i> Print</button>
             <a href="?page=purchases" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
@@ -15,13 +15,13 @@
                     <h5>Supplier</h5>
                     <p class="mb-1"><strong><?= htmlspecialchars($purchase['supplier_name']) ?></strong></p>
                     <p class="mb-1"><?= htmlspecialchars($purchase['contact_person'] ?? '') ?></p>
-                    <p class="mb-1"><?= htmlspecialchars($purchase['phone'] ?? '') ?></p>
+                    <p class="mb-1"><?= htmlspecialchars($purchase['supplier_phone'] ?? '') ?></p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <h5>Details</h5>
-                    <p class="mb-1"><strong>Purchase #:</strong> <?= htmlspecialchars($purchase['purchase_number']) ?></p>
-                    <p class="mb-1"><strong>Date:</strong> <?= dateFmt($purchase['purchase_date']) ?></p>
-                    <p class="mb-1"><strong>Created by:</strong> <?= htmlspecialchars($purchase['created_by_name'] ?? '-') ?></p>
+                    <p class="mb-1"><strong>Purchase #:</strong> <?= htmlspecialchars($purchase['reference_number']) ?></p>
+                    <p class="mb-1"><strong>Date:</strong> <?= dateFmt($purchase['created_at']) ?></p>
+                    <p class="mb-1"><strong>Created by:</strong> <?= htmlspecialchars($purchase['user_name'] ?? '-') ?></p>
                     <p class="mb-1"><strong>Status:</strong>
                         <span class="badge bg-success"><?= htmlspecialchars($purchase['status']) ?></span>
                     </p>
@@ -48,7 +48,7 @@
                             <td><?= htmlspecialchars($it['batch_number'] ?? '-') ?></td>
                             <td><?= $it['expiry_date'] ? dateFmt($it['expiry_date']) : '-' ?></td>
                             <td class="text-end"><?= $it['quantity'] ?></td>
-                            <td class="text-end"><?= money($it['cost_price']) ?></td>
+                            <td class="text-end"><?= money($it['unit_cost']) ?></td>
                             <td class="text-end"><?= money($it['subtotal']) ?></td>
                         </tr>
                     <?php endforeach; ?>

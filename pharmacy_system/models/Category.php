@@ -1,33 +1,49 @@
 <?php
 /**
- * Category Model.
+ * Category Model. Tenant-scoped by pharmacy_id.
  */
 class Category {
     private $db;
-    public function __construct($db) { $this->db = $db; }
+    private $pharmacyId;
+
+    public function __construct($db, $pharmacyId = null) {
+        $this->db         = $db;
+        $this->pharmacyId = $pharmacyId === null ? null : (int)$pharmacyId;
+    }
+
+    private function tenantClause() {
+        return $this->pharmacyId === null ? '' : " AND pharmacy_id = " . $this->pharmacyId;
+    }
 
     public function all() {
-        return $this->db->query("SELECT * FROM categories ORDER BY name ASC")->fetchAll();
+        $sql = "SELECT * FROM categories WHERE 1=1" . $this->tenantClause() . " ORDER BY name ASC";
+        return $this->db->query($sql)->fetchAll();
     }
 
     public function find($id) {
-        $stmt = $this->db->prepare("SELECT * FROM categories WHERE id = ?");
+        $sql = "SELECT * FROM categories WHERE id = ?" . $this->tenantClause();
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
     }
 
     public function create($d) {
-        $stmt = $this->db->prepare("INSERT INTO categories (name, description) VALUES (?, ?)");
-        return $stmt->execute([$d['name'], $d['description'] ?? null]);
+        if ($this->pharmacyId === null) {
+            throw new Exception('Cannot create a category without a pharmacy context.');
+        }
+        $stmt = $this->db->prepare("INSERT INTO categories (pharmacy_id, name, description) VALUES (?, ?, ?)");
+        return $stmt->execute([$this->pharmacyId, $d['name'], $d['description'] ?? null]);
     }
 
     public function update($id, $d) {
-        $stmt = $this->db->prepare("UPDATE categories SET name=?, description=? WHERE id=?");
+        $sql = "UPDATE categories SET name=?, description=? WHERE id=?" . $this->tenantClause();
+        $stmt = $this->db->prepare($sql);
         return $stmt->execute([$d['name'], $d['description'] ?? null, $id]);
     }
 
     public function delete($id) {
-        $stmt = $this->db->prepare("DELETE FROM categories WHERE id = ?");
+        $sql = "DELETE FROM categories WHERE id = ?" . $this->tenantClause();
+        $stmt = $this->db->prepare($sql);
         return $stmt->execute([$id]);
     }
 }

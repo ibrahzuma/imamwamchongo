@@ -1,0 +1,4 @@
+# Block direct web access to PHP libraries.
+# These files are loaded server-side via require_once and should never
+# be requested directly.
+Require all denied

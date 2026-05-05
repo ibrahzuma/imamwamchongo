@@ -1,4 +1,5 @@
 <?php $pageTitle = 'Medicines'; require __DIR__ . '/../layouts/header.php'; ?>
+<div data-rt-refresh="stock.adjusted,sale.created,purchase.created" hidden></div>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="mb-0"><i class="bi bi-capsule"></i> Medicines</h3>
@@ -22,7 +23,7 @@
         </form>
 
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle js-datatable" data-order='[[0,"asc"]]'>
                 <thead>
                 <tr>
                     <th>Name</th>
@@ -32,13 +33,11 @@
                     <th class="text-end">Cost</th>
                     <th class="text-end">Price</th>
                     <th class="text-center">Stock</th>
-                    <th class="text-end">Actions</th>
+                    <th class="text-end dt-no-sort dt-no-export">Actions</th>
                 </tr>
                 </thead>
                 <tbody>
-                <?php if (empty($medicines)): ?>
-                    <tr><td colspan="8" class="text-center text-muted py-4">No medicines found.</td></tr>
-                <?php else: foreach ($medicines as $m): ?>
+                <?php foreach ($medicines as $m): ?>
                     <tr>
                         <td>
                             <strong><?= sanitize($m['name']) ?></strong>
@@ -71,11 +70,16 @@
                                 <a href="<?= url('index.php?page=medicines&action=edit&id=' . $m['id']) ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
                             <?php endif; ?>
                             <?php if (hasRole(['admin'])): ?>
-                                <a href="<?= url('index.php?page=medicines&action=delete&id=' . $m['id']) ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this medicine?')"><i class="bi bi-trash"></i></a>
+                                <form method="POST" action="<?= url('index.php?page=medicines&action=delete') ?>" class="d-inline"
+                                      onsubmit="return confirm('Delete this medicine?');">
+                                    <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+                                    <input type="hidden" name="id" value="<?= (int)$m['id'] ?>">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </form>
                             <?php endif; ?>
                         </td>
                     </tr>
-                <?php endforeach; endif; ?>
+                <?php endforeach; ?>
                 </tbody>
             </table>
         </div>

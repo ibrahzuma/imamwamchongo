@@ -3,6 +3,7 @@
  * Inventory Controller — stock movements & adjustments.
  */
 require_once __DIR__ . '/../models/Medicine.php';
+require_once __DIR__ . '/../lib/RealtimeHub.php';
 
 class InventoryController {
     private $db;
@@ -10,7 +11,7 @@ class InventoryController {
 
     public function __construct($db) {
         $this->db       = $db;
-        $this->medicine = new Medicine($db);
+        $this->medicine = new Medicine($db, currentPharmacyId());
     }
 
     public function index() {
@@ -44,6 +45,21 @@ class InventoryController {
         }
 
         $this->medicine->adjustStock($medicineId, $qty, $type, 'manual', null, $_SESSION['user_id'], $notes);
+
+        // Look up the medicine name + new quantity for the realtime event
+        $stmt = $this->db->prepare("SELECT name, quantity FROM medicines WHERE id = ? AND pharmacy_id = ?");
+        $stmt->execute([$medicineId, currentPharmacyId()]);
+        $med = $stmt->fetch();
+        if ($med) {
+            $delta = ($type === 'in' ? '+' : ($type === 'out' ? '-' : '±')) . $qty;
+            RealtimeHub::publish(currentPharmacyId(), 'stock.adjusted', [
+                'medicine' => $med['name'],
+                'delta'    => $delta,
+                'quantity' => (int)$med['quantity'],
+                'by'       => $_SESSION['full_name'] ?? '',
+            ]);
+        }
+
         flash('success', 'Stock adjusted successfully.');
         redirect('index.php?page=inventory');
     }

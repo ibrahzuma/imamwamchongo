@@ -3,6 +3,9 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3><i class="bi bi-boxes"></i> Inventory Report</h3>
         <div>
+            <a class="btn btn-danger" href="?page=reports&action=exportInventoryPdf" target="_blank">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
             <button onclick="window.print()" class="btn btn-primary"><i class="bi bi-printer"></i> Print</button>
             <a href="?page=reports" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
         </div>
@@ -46,10 +49,10 @@
     <div class="card">
         <div class="card-header bg-light"><strong>Stock Levels</strong></div>
         <div class="card-body">
-            <table class="table table-striped table-sm">
+            <table class="table table-striped table-sm js-datatable" data-order='[[1,"asc"]]'>
                 <thead>
                     <tr>
-                        <th>#</th><th>Medicine</th><th>Category</th><th>Batch</th>
+                        <th class="dt-no-sort dt-no-export">#</th><th>Medicine</th><th>Category</th><th>Batch</th>
                         <th class="text-end">Stock</th><th class="text-end">Reorder Lvl</th>
                         <th class="text-end">Cost</th><th class="text-end">Price</th>
                         <th class="text-end">Stock Value</th><th>Status</th>
@@ -68,7 +71,7 @@
                             <td class="text-end"><?= $m['quantity'] ?? 0 ?></td>
                             <td class="text-end"><?= $m['reorder_level'] ?? 0 ?></td>
                             <td class="text-end"><?= money($m['cost_price'] ?? 0) ?></td>
-                            <td class="text-end"><?= money($m['price'] ?? 0) ?></td>
+                            <td class="text-end"><?= money($m['selling_price'] ?? 0) ?></td>
                             <td class="text-end"><?= money($value) ?></td>
                             <td>
                                 <?php if ($isLow): ?>

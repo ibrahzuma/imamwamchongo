@@ -1,4 +1,5 @@
 <?php $pageTitle='Purchases'; require __DIR__ . '/../layouts/header.php'; ?>
+<div data-rt-refresh="purchase.created" hidden></div>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="mb-0"><i class="bi bi-truck"></i> Purchases</h3>
@@ -8,12 +9,10 @@
 </div>
 
 <div class="card"><div class="card-body table-responsive">
-    <table class="table table-hover align-middle">
-        <thead><tr><th>Reference</th><th>Supplier</th><th>By</th><th class="text-end">Total</th><th>Status</th><th>Date</th><th></th></tr></thead>
+    <table class="table table-hover align-middle js-datatable" data-order='[[5,"desc"]]'>
+        <thead><tr><th>Reference</th><th>Supplier</th><th>By</th><th class="text-end">Total</th><th>Status</th><th>Date</th><th class="dt-no-sort dt-no-export"></th></tr></thead>
         <tbody>
-        <?php if (empty($purchases)): ?>
-            <tr><td colspan="7" class="text-center text-muted py-4">No purchases yet.</td></tr>
-        <?php else: foreach ($purchases as $p): ?>
+        <?php foreach ($purchases as $p): ?>
             <tr>
                 <td><strong><?= sanitize($p['reference_number']) ?></strong></td>
                 <td><?= sanitize($p['supplier_name']) ?></td>
@@ -23,7 +22,7 @@
                 <td><small><?= dateFmt($p['created_at'], 'M j Y H:i') ?></small></td>
                 <td><a href="<?= url('index.php?page=purchases&action=show&id=' . $p['id']) ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a></td>
             </tr>
-        <?php endforeach; endif; ?>
+        <?php endforeach; ?>
         </tbody>
     </table>
 </div></div>

@@ -24,6 +24,19 @@ class AuthController {
             flash('error', 'Invalid security token. Please try again.');
             redirect('index.php?page=login');
         }
+
+        // Brute-force throttle: 5 failed attempts -> 10-minute cool-down.
+        // Tracked per session (per browser/cookie) — not perfect across IPs,
+        // but stops the casual attempt-spammer without an extra table.
+        $now      = time();
+        $attempts = $_SESSION['login_attempts'] ?? 0;
+        $lockTill = $_SESSION['login_locked_until'] ?? 0;
+        if ($lockTill > $now) {
+            $wait = (int)ceil(($lockTill - $now) / 60);
+            flash('error', "Too many failed attempts. Try again in $wait minute(s).");
+            redirect('index.php?page=login');
+        }
+
         $username = trim($_POST['username'] ?? '');
         $password = (string)($_POST['password'] ?? '');
 
@@ -34,14 +47,28 @@ class AuthController {
 
         $u = $this->user->login($username, $password);
         if ($u) {
-            $_SESSION['user_id']   = $u['id'];
-            $_SESSION['username']  = $u['username'];
-            $_SESSION['full_name'] = $u['full_name'];
-            $_SESSION['role']      = $u['role'];
-            $_SESSION['branch_id'] = $u['branch_id'];
+            // Defeat session fixation: regenerate the ID so a pre-set
+            // attacker cookie can't ride the just-authenticated session.
+            session_regenerate_id(true);
+
+            unset($_SESSION['login_attempts'], $_SESSION['login_locked_until']);
+
+            $_SESSION['user_id']       = $u['id'];
+            $_SESSION['username']      = $u['username'];
+            $_SESSION['full_name']     = $u['full_name'];
+            $_SESSION['role']          = $u['role'];
+            $_SESSION['branch_id']     = $u['branch_id'] ?? null;
+            $_SESSION['pharmacy_id']   = $u['pharmacy_id'] ?? null;
+            $_SESSION['pharmacy_name'] = $u['pharmacy_name'] ?? '';
             redirect('index.php?page=dashboard');
         }
-        flash('error', 'Invalid username or password.');
+
+        $_SESSION['login_attempts'] = $attempts + 1;
+        if ($_SESSION['login_attempts'] >= 5) {
+            $_SESSION['login_locked_until'] = $now + 600; // 10 minutes
+            $_SESSION['login_attempts'] = 0;
+        }
+        flash('error', 'Invalid credentials, account disabled, or pharmacy inactive.');
         redirect('index.php?page=login');
     }
 

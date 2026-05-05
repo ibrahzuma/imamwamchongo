@@ -10,7 +10,7 @@ class SupplierController {
 
     public function __construct($db) {
         $this->db       = $db;
-        $this->supplier = new Supplier($db);
+        $this->supplier = new Supplier($db, currentPharmacyId());
     }
 
     public function index() {
@@ -61,7 +61,11 @@ class SupplierController {
 
     public function delete() {
         requireRole(['admin']);
-        $id = (int)($_GET['id'] ?? 0);
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verifyCsrf($_POST['csrf_token'] ?? '')) {
+            flash('error', 'Invalid request.');
+            redirect('index.php?page=suppliers');
+        }
+        $id = (int)($_POST['id'] ?? 0);
         try {
             $this->supplier->delete($id);
             flash('success', 'Supplier deleted.');

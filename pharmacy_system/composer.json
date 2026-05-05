@@ -1,0 +1,13 @@
+{
+    "name": "pharmacare-plus/pharmacy-system",
+    "description": "PharmaCare Plus — multi-tenant pharmacy management system with realtime updates",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "cboden/ratchet": "^0.4.4",
+        "tecnickcom/tcpdf": "^6.6"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

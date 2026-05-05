@@ -7,17 +7,15 @@
 
     <div class="card">
         <div class="card-body">
-            <table class="table table-striped">
+            <table class="table table-striped js-datatable" data-order='[[1,"asc"]]'>
                 <thead>
                     <tr>
-                        <th>#</th><th>Username</th><th>Full Name</th><th>Email</th>
-                        <th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th>
+                        <th class="dt-no-sort dt-no-export">#</th><th>Username</th><th>Full Name</th><th>Email</th>
+                        <th>Role</th><th>Status</th><th>Last Login</th><th class="dt-no-sort dt-no-export">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($users)): ?>
-                        <tr><td colspan="8" class="text-center text-muted">No users found</td></tr>
-                    <?php else: $i=1; foreach ($users as $u): ?>
+                    <?php $i=1; foreach ($users as $u): ?>
                         <tr>
                             <td><?= $i++ ?></td>
                             <td><strong><?= htmlspecialchars($u['username']) ?></strong></td>
@@ -38,14 +36,15 @@
                             <td>
                                 <a href="?page=users&action=edit&id=<?= $u['id'] ?>" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
                                 <?php if ($u['id'] != currentUser()['id']): ?>
-                                    <form method="POST" action="?page=users&action=delete&id=<?= $u['id'] ?>" class="d-inline" onsubmit="return confirm('Delete this user?');">
+                                    <form method="POST" action="?page=users&action=delete" class="d-inline" onsubmit="return confirm('Delete this user?');">
                                         <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+                                        <input type="hidden" name="id" value="<?= (int)$u['id'] ?>">
                                         <button class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
                                     </form>
                                 <?php endif; ?>
                             </td>
                         </tr>
-                    <?php endforeach; endif; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>

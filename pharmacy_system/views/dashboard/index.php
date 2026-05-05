@@ -1,4 +1,5 @@
 <?php $pageTitle = 'Dashboard'; require __DIR__ . '/../layouts/header.php'; ?>
+<div data-rt-refresh="sale.created,purchase.created,stock.adjusted" hidden></div>
 
 <h3 class="mb-4"><i class="bi bi-speedometer2"></i> Dashboard</h3>
 

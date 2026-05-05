@@ -127,7 +127,7 @@ document.getElementById('addItemBtn').addEventListener('click', function() {
         batch_number: document.getElementById('itemBatch').value,
         expiry_date: document.getElementById('itemExpiry').value,
         quantity: qty,
-        cost_price: cost
+        unit_cost: cost
     });
 
     document.getElementById('medicineSelect').value = '';
@@ -145,20 +145,20 @@ function renderItems() {
         document.getElementById('submitBtn').disabled = true;
     } else {
         tbody.innerHTML = items.map((it, idx) => {
-            const sub = (it.quantity * it.cost_price).toFixed(2);
+            const sub = (it.quantity * it.unit_cost).toFixed(2);
             return `<tr>
                 <td>${escapeHtml(it.name)}</td>
                 <td>${escapeHtml(it.batch_number || '-')}</td>
                 <td>${escapeHtml(it.expiry_date || '-')}</td>
                 <td>${it.quantity}</td>
-                <td>${CURRENCY} ${it.cost_price.toFixed(2)}</td>
+                <td>${CURRENCY} ${it.unit_cost.toFixed(2)}</td>
                 <td>${CURRENCY} ${sub}</td>
                 <td><button type="button" class="btn btn-sm btn-danger" onclick="removeItem(${idx})"><i class="bi bi-trash"></i></button></td>
             </tr>`;
         }).join('');
         document.getElementById('submitBtn').disabled = false;
     }
-    const total = items.reduce((sum, it) => sum + (it.quantity * it.cost_price), 0);
+    const total = items.reduce((sum, it) => sum + (it.quantity * it.unit_cost), 0);
     document.getElementById('purchaseTotal').textContent = CURRENCY + ' ' + total.toFixed(2);
 }
 
@@ -194,7 +194,7 @@ document.getElementById('purchaseForm').addEventListener('submit', async functio
         });
         const data = await res.json();
         if (data.success) {
-            window.location = '?page=purchases&action=show&id=' + data.purchase_id;
+            window.location = '?page=purchases&action=show&id=' + data.purchase.id;
         } else {
             alert(data.message || 'Error saving purchase');
             document.getElementById('submitBtn').disabled = false;

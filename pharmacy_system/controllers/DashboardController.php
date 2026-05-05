@@ -1,6 +1,6 @@
 <?php
 /**
- * Dashboard Controller — KPIs and quick stats.
+ * Dashboard Controller — KPIs and quick stats. Tenant-scoped.
  */
 require_once __DIR__ . '/../models/Medicine.php';
 require_once __DIR__ . '/../models/Sale.php';
@@ -11,54 +11,54 @@ class DashboardController {
 
     public function index() {
         requireLogin();
-        $medicine = new Medicine($this->db);
-        $sale     = new Sale($this->db);
 
-        // Quick stats
-        $totalMedicines = (int)$this->db->query("SELECT COUNT(*) FROM medicines WHERE is_active=1")->fetchColumn();
-        $totalSuppliers = (int)$this->db->query("SELECT COUNT(*) FROM suppliers WHERE is_active=1")->fetchColumn();
-        $totalUsers     = (int)$this->db->query("SELECT COUNT(*) FROM users WHERE is_active=1")->fetchColumn();
+        // Superadmin lands on a different page (pharmacy management overview)
+        if (isSuperadmin()) {
+            redirect('index.php?page=pharmacies');
+        }
 
-        // Sales today
-        $todaySales = $this->db->query("
+        $pid      = currentPharmacyId();
+        $medicine = new Medicine($this->db, $pid);
+        $sale     = new Sale($this->db, $pid);
+
+        // Quick stats — all scoped to current pharmacy
+        $totalMedicines = (int)$this->q("SELECT COUNT(*) FROM medicines  WHERE is_active=1 AND pharmacy_id=?", [$pid])->fetchColumn();
+        $totalSuppliers = (int)$this->q("SELECT COUNT(*) FROM suppliers  WHERE is_active=1 AND pharmacy_id=?", [$pid])->fetchColumn();
+        $totalUsers     = (int)$this->q("SELECT COUNT(*) FROM users      WHERE is_active=1 AND pharmacy_id=?", [$pid])->fetchColumn();
+
+        $todaySales = $this->q("
             SELECT COUNT(*) AS cnt, COALESCE(SUM(total),0) AS total
-            FROM sales WHERE DATE(created_at) = CURDATE() AND status='completed'
-        ")->fetch();
+            FROM sales WHERE DATE(created_at) = CURDATE() AND status='completed' AND pharmacy_id=?
+        ", [$pid])->fetch();
 
-        // Sales last 7 days
-        $weekSales = $this->db->query("
+        $weekSales = $this->q("
             SELECT COALESCE(SUM(total),0) AS total
-            FROM sales WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) AND status='completed'
-        ")->fetchColumn();
+            FROM sales WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) AND status='completed' AND pharmacy_id=?
+        ", [$pid])->fetchColumn();
 
-        // Sales this month
-        $monthSales = $this->db->query("
+        $monthSales = $this->q("
             SELECT COALESCE(SUM(total),0) AS total
             FROM sales WHERE MONTH(created_at) = MONTH(CURDATE())
               AND YEAR(created_at) = YEAR(CURDATE())
-              AND status='completed'
-        ")->fetchColumn();
+              AND status='completed' AND pharmacy_id=?
+        ", [$pid])->fetchColumn();
 
-        // Inventory value
-        $inventoryValue = (float)$this->db->query("
-            SELECT COALESCE(SUM(quantity * cost_price), 0) FROM medicines WHERE is_active=1
-        ")->fetchColumn();
+        $inventoryValue = (float)$this->q("
+            SELECT COALESCE(SUM(quantity * cost_price), 0) FROM medicines WHERE is_active=1 AND pharmacy_id=?
+        ", [$pid])->fetchColumn();
 
-        // Alerts
         $lowStock      = $medicine->lowStock(5);
         $expiringSoon  = $medicine->expiring(60);
         $recentSales   = $sale->recent(8);
 
-        // Last 7 day sales chart data
-        $chartRows = $this->db->query("
+        $chartRows = $this->q("
             SELECT DATE(created_at) AS day, COALESCE(SUM(total),0) AS revenue
             FROM sales
-            WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) AND status='completed'
+            WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) AND status='completed' AND pharmacy_id=?
             GROUP BY DATE(created_at)
             ORDER BY day ASC
-        ")->fetchAll();
+        ", [$pid])->fetchAll();
 
-        // Build a continuous 7-day series
         $chartLabels = [];
         $chartData   = [];
         for ($i = 6; $i >= 0; $i--) {
@@ -72,5 +72,11 @@ class DashboardController {
         }
 
         require __DIR__ . '/../views/dashboard/index.php';
+    }
+
+    private function q($sql, $params = []) {
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt;
     }
 }

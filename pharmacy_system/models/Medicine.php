@@ -1,13 +1,20 @@
 <?php
 /**
  * Medicine Model.
- * Handles CRUD plus stock movement helpers.
+ * All queries are scoped by pharmacy_id (tenant isolation).
+ * Pass pharmacyId = null only for superadmin contexts.
  */
 class Medicine {
     private $db;
+    private $pharmacyId;
 
-    public function __construct($db) {
-        $this->db = $db;
+    public function __construct($db, $pharmacyId = null) {
+        $this->db         = $db;
+        $this->pharmacyId = $pharmacyId === null ? null : (int)$pharmacyId;
+    }
+
+    private function tenantClause($alias = 'm') {
+        return $this->pharmacyId === null ? '' : " AND $alias.pharmacy_id = " . $this->pharmacyId;
     }
 
     public function all($search = '') {
@@ -15,7 +22,7 @@ class Medicine {
                 FROM medicines m
                 LEFT JOIN categories c ON c.id = m.category_id
                 LEFT JOIN suppliers  s ON s.id = m.supplier_id
-                WHERE 1=1";
+                WHERE 1=1" . $this->tenantClause('m');
         $params = [];
         if ($search !== '') {
             $sql .= " AND (m.name LIKE ? OR m.generic_name LIKE ? OR m.barcode LIKE ?)";
@@ -29,37 +36,44 @@ class Medicine {
     }
 
     public function find($id) {
-        $stmt = $this->db->prepare("SELECT * FROM medicines WHERE id = ?");
+        $sql = "SELECT * FROM medicines WHERE id = ?" . $this->tenantClause('medicines');
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([$id]);
         return $stmt->fetch();
     }
 
     public function findByBarcode($barcode) {
-        $stmt = $this->db->prepare("SELECT * FROM medicines WHERE barcode = ? AND is_active = 1");
+        $sql = "SELECT * FROM medicines WHERE barcode = ? AND is_active = 1"
+             . $this->tenantClause('medicines');
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([$barcode]);
         return $stmt->fetch();
     }
 
     public function search($term) {
-        $stmt = $this->db->prepare("
-            SELECT id, name, generic_name, barcode, selling_price, quantity, unit
-            FROM medicines
-            WHERE is_active = 1 AND quantity > 0
-              AND (name LIKE ? OR generic_name LIKE ? OR barcode LIKE ?)
-            ORDER BY name LIMIT 15
-        ");
+        $sql = "SELECT id, name, generic_name, barcode, selling_price, quantity, unit
+                FROM medicines
+                WHERE is_active = 1 AND quantity > 0"
+             . $this->tenantClause('medicines') . "
+                  AND (name LIKE ? OR generic_name LIKE ? OR barcode LIKE ?)
+                ORDER BY name LIMIT 15";
+        $stmt = $this->db->prepare($sql);
         $like = "%$term%";
         $stmt->execute([$like, $like, $like]);
         return $stmt->fetchAll();
     }
 
     public function create($d) {
+        if ($this->pharmacyId === null) {
+            throw new Exception('Cannot create a medicine without a pharmacy context.');
+        }
         $sql = "INSERT INTO medicines
-            (barcode, name, generic_name, category_id, supplier_id, unit, batch_number, expiry_date,
+            (pharmacy_id, barcode, name, generic_name, category_id, supplier_id, unit, batch_number, expiry_date,
              cost_price, selling_price, quantity, reorder_level, description, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
+            $this->pharmacyId,
             $d['barcode']        ?: null,
             $d['name'],
             $d['generic_name']   ?? null,
@@ -82,7 +96,7 @@ class Medicine {
                 barcode=?, name=?, generic_name=?, category_id=?, supplier_id=?, unit=?,
                 batch_number=?, expiry_date=?, cost_price=?, selling_price=?, quantity=?,
                 reorder_level=?, description=?, is_active=?
-                WHERE id=?";
+                WHERE id=?" . $this->tenantClause('medicines');
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
             $d['barcode']        ?: null,
@@ -104,15 +118,24 @@ class Medicine {
     }
 
     public function delete($id) {
-        $stmt = $this->db->prepare("DELETE FROM medicines WHERE id = ?");
+        $sql = "DELETE FROM medicines WHERE id = ?" . $this->tenantClause('medicines');
+        $stmt = $this->db->prepare($sql);
         return $stmt->execute([$id]);
     }
 
     /**
-     * Adjust stock & log a movement in the same transaction-friendly fashion.
+     * Adjust stock & log a movement. Stamps pharmacy_id on the movement row.
      */
     public function adjustStock($medicineId, $qty, $type, $refType = 'manual', $refId = null, $userId = null, $notes = '') {
-        // Update quantity
+        if ($this->pharmacyId === null) {
+            throw new Exception('Cannot adjust stock without a pharmacy context.');
+        }
+        // Confirm the medicine actually belongs to this tenant before mutating
+        $check = $this->db->prepare("SELECT 1 FROM medicines WHERE id = ? AND pharmacy_id = ?");
+        $check->execute([$medicineId, $this->pharmacyId]);
+        if (!$check->fetchColumn()) {
+            throw new Exception('Medicine does not belong to this pharmacy.');
+        }
         if ($type === 'in') {
             $this->db->prepare("UPDATE medicines SET quantity = quantity + ? WHERE id = ?")
                      ->execute([$qty, $medicineId]);
@@ -120,33 +143,33 @@ class Medicine {
             $this->db->prepare("UPDATE medicines SET quantity = GREATEST(0, quantity - ?) WHERE id = ?")
                      ->execute([$qty, $medicineId]);
         }
-        // Log movement
         $this->db->prepare("
-            INSERT INTO stock_movements (medicine_id, movement_type, quantity, reference_type, reference_id, notes, user_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ")->execute([$medicineId, $type, $qty, $refType, $refId, $notes, $userId]);
+            INSERT INTO stock_movements (pharmacy_id, medicine_id, movement_type, quantity, reference_type, reference_id, notes, user_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ")->execute([$this->pharmacyId, $medicineId, $type, $qty, $refType, $refId, $notes, $userId]);
     }
 
     public function lowStock($limit = null) {
         $sql = "SELECT m.*, c.name AS category_name
                 FROM medicines m
                 LEFT JOIN categories c ON c.id = m.category_id
-                WHERE m.is_active = 1 AND m.quantity <= m.reorder_level
+                WHERE m.is_active = 1 AND m.quantity <= m.reorder_level"
+             . $this->tenantClause('m') . "
                 ORDER BY m.quantity ASC";
         if ($limit) $sql .= " LIMIT " . (int)$limit;
         return $this->db->query($sql)->fetchAll();
     }
 
     public function expiring($days = 60) {
-        $stmt = $this->db->prepare("
-            SELECT m.*, c.name AS category_name
-            FROM medicines m
-            LEFT JOIN categories c ON c.id = m.category_id
-            WHERE m.is_active = 1
-              AND m.expiry_date IS NOT NULL
-              AND m.expiry_date <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
-            ORDER BY m.expiry_date ASC
-        ");
+        $sql = "SELECT m.*, c.name AS category_name
+                FROM medicines m
+                LEFT JOIN categories c ON c.id = m.category_id
+                WHERE m.is_active = 1
+                  AND m.expiry_date IS NOT NULL
+                  AND m.expiry_date <= DATE_ADD(CURDATE(), INTERVAL ? DAY)"
+             . $this->tenantClause('m') . "
+                ORDER BY m.expiry_date ASC";
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([$days]);
         return $stmt->fetchAll();
     }
@@ -155,10 +178,11 @@ class Medicine {
         $sql = "SELECT sm.*, m.name AS medicine_name, u.full_name AS user_name
                 FROM stock_movements sm
                 JOIN medicines m ON m.id = sm.medicine_id
-                LEFT JOIN users u ON u.id = sm.user_id";
+                LEFT JOIN users u ON u.id = sm.user_id
+                WHERE 1=1" . $this->tenantClause('sm');
         $params = [];
         if ($medicineId) {
-            $sql .= " WHERE sm.medicine_id = ?";
+            $sql .= " AND sm.medicine_id = ?";
             $params[] = $medicineId;
         }
         $sql .= " ORDER BY sm.created_at DESC LIMIT " . (int)$limit;

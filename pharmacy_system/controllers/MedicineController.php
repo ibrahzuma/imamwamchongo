@@ -12,7 +12,7 @@ class MedicineController {
 
     public function __construct($db) {
         $this->db       = $db;
-        $this->medicine = new Medicine($db);
+        $this->medicine = new Medicine($db, currentPharmacyId());
     }
 
     public function index() {
@@ -24,8 +24,8 @@ class MedicineController {
 
     public function create() {
         requireRole(['admin','pharmacist']);
-        $categories = (new Category($this->db))->all();
-        $suppliers  = (new Supplier($this->db))->all();
+        $categories = (new Category($this->db, currentPharmacyId()))->all();
+        $suppliers  = (new Supplier($this->db, currentPharmacyId()))->all();
         require __DIR__ . '/../views/medicines/create.php';
     }
 
@@ -56,8 +56,8 @@ class MedicineController {
         $id        = (int)($_GET['id'] ?? 0);
         $medicine  = $this->medicine->find($id);
         if (!$medicine) { flash('error', 'Medicine not found.'); redirect('index.php?page=medicines'); }
-        $categories = (new Category($this->db))->all();
-        $suppliers  = (new Supplier($this->db))->all();
+        $categories = (new Category($this->db, currentPharmacyId()))->all();
+        $suppliers  = (new Supplier($this->db, currentPharmacyId()))->all();
         require __DIR__ . '/../views/medicines/edit.php';
     }
 
@@ -84,7 +84,11 @@ class MedicineController {
 
     public function delete() {
         requireRole(['admin']);
-        $id = (int)($_GET['id'] ?? 0);
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verifyCsrf($_POST['csrf_token'] ?? '')) {
+            flash('error', 'Invalid request.');
+            redirect('index.php?page=medicines');
+        }
+        $id = (int)($_POST['id'] ?? 0);
         try {
             $this->medicine->delete($id);
             flash('success', 'Medicine deleted.');

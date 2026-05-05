@@ -1,0 +1,2 @@
+# Block direct web access to database SQL files & migrations.
+Require all denied

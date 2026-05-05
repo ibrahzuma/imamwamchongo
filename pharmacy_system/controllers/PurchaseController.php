@@ -5,6 +5,7 @@
 require_once __DIR__ . '/../models/Purchase.php';
 require_once __DIR__ . '/../models/Medicine.php';
 require_once __DIR__ . '/../models/Supplier.php';
+require_once __DIR__ . '/../lib/RealtimeHub.php';
 
 class PurchaseController {
     private $db;
@@ -12,7 +13,7 @@ class PurchaseController {
 
     public function __construct($db) {
         $this->db       = $db;
-        $this->purchase = new Purchase($db);
+        $this->purchase = new Purchase($db, currentPharmacyId());
     }
 
     public function index() {
@@ -23,8 +24,8 @@ class PurchaseController {
 
     public function create() {
         requireRole(['admin','pharmacist']);
-        $suppliers = (new Supplier($this->db))->all();
-        $medicines = (new Medicine($this->db))->all();
+        $suppliers = (new Supplier($this->db, currentPharmacyId()))->all();
+        $medicines = (new Medicine($this->db, currentPharmacyId()))->all();
         require __DIR__ . '/../views/purchases/create.php';
     }
 
@@ -47,12 +48,20 @@ class PurchaseController {
             $payload = [
                 'supplier_id' => (int)$data['supplier_id'],
                 'user_id'     => $_SESSION['user_id'],
-                'branch_id'   => $_SESSION['branch_id'] ?? 1,
+                'branch_id'   => $_SESSION['branch_id'] ?? null,
                 'tax_amount'  => $data['tax_amount'] ?? 0,
                 'discount'    => $data['discount']   ?? 0,
                 'notes'       => $data['notes']      ?? null,
             ];
             $result = $this->purchase->create($payload, $data['items']);
+
+            RealtimeHub::publish(currentPharmacyId(), 'purchase.created', [
+                'reference' => $result['reference_number'],
+                'total'     => money($result['total']),
+                'items'     => count($data['items']),
+                'by'        => $_SESSION['full_name'] ?? '',
+            ]);
+
             jsonResponse(['success'=>true, 'purchase'=>$result]);
         } catch (Exception $e) {
             jsonResponse(['success'=>false, 'message'=>$e->getMessage()], 400);

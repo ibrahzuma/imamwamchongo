@@ -1,4 +1,5 @@
 <?php $pageTitle='Inventory'; require __DIR__ . '/../layouts/header.php'; ?>
+<div data-rt-refresh="stock.adjusted,sale.created,purchase.created" hidden></div>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="mb-0"><i class="bi bi-box-seam"></i> Inventory</h3>
@@ -18,12 +19,10 @@
 <div class="card">
     <div class="card-header"><i class="bi bi-clock-history"></i> Recent Stock Movements</div>
     <div class="card-body table-responsive">
-        <table class="table table-sm">
+        <table class="table table-sm js-datatable" data-order='[[0,"desc"]]'>
             <thead><tr><th>Date</th><th>Medicine</th><th>Type</th><th class="text-end">Qty</th><th>Reference</th><th>Notes</th><th>By</th></tr></thead>
             <tbody>
-            <?php if (empty($movements)): ?>
-                <tr><td colspan="7" class="text-center text-muted py-3">No stock movements yet.</td></tr>
-            <?php else: foreach ($movements as $m): ?>
+            <?php foreach ($movements as $m): ?>
                 <tr>
                     <td><small><?= dateFmt($m['created_at'], 'M j H:i') ?></small></td>
                     <td><?= sanitize($m['medicine_name']) ?></td>
@@ -38,7 +37,7 @@
                     <td><small><?= sanitize($m['notes'] ?? '-') ?></small></td>
                     <td><small><?= sanitize($m['user_name'] ?? '-') ?></small></td>
                 </tr>
-            <?php endforeach; endif; ?>
+            <?php endforeach; ?>
             </tbody>
         </table>
     </div>

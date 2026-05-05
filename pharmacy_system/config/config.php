@@ -4,12 +4,29 @@
  * Bootstraps every request.
  */
 
-// Show errors during development. In production, log instead of display.
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+// Errors: display in dev (APP_ENV=dev or unset), log silently in production.
+$appEnv = getenv('APP_ENV') ?: 'dev';
+if ($appEnv === 'production') {
+    ini_set('display_errors', 0);
+    ini_set('log_errors', 1);
+    error_reporting(E_ALL & ~E_DEPRECATED & ~E_STRICT);
+} else {
+    ini_set('display_errors', 1);
+    error_reporting(E_ALL);
+}
 
-// Start session for auth
+// Harden session cookies: HttpOnly always, Secure if HTTPS, SameSite=Lax.
+// (SameSite=Strict would log users out from invoice/print links opened in new tabs.)
 if (session_status() === PHP_SESSION_NONE) {
+    $secureCookie = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path'     => '/',
+        'domain'   => '',
+        'secure'   => $secureCookie,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }
 
@@ -71,11 +88,13 @@ function isLoggedIn() {
 function currentUser() {
     if (!isLoggedIn()) return null;
     return [
-        'id'        => $_SESSION['user_id'],
-        'username'  => $_SESSION['username'] ?? '',
-        'full_name' => $_SESSION['full_name'] ?? '',
-        'role'      => $_SESSION['role'] ?? '',
-        'branch_id' => $_SESSION['branch_id'] ?? 1,
+        'id'            => $_SESSION['user_id'],
+        'username'      => $_SESSION['username']      ?? '',
+        'full_name'     => $_SESSION['full_name']     ?? '',
+        'role'          => $_SESSION['role']          ?? '',
+        'branch_id'     => $_SESSION['branch_id']     ?? null,
+        'pharmacy_id'   => $_SESSION['pharmacy_id']   ?? null,
+        'pharmacy_name' => $_SESSION['pharmacy_name'] ?? '',
     ];
 }
 
@@ -102,6 +121,42 @@ function hasRole($roles) {
     if (!isLoggedIn()) return false;
     if (!is_array($roles)) $roles = [$roles];
     return in_array($_SESSION['role'] ?? '', $roles, true);
+}
+
+function requireSuperadmin() {
+    requireRole(['superadmin']);
+}
+
+function isSuperadmin() {
+    return hasRole(['superadmin']);
+}
+
+/**
+ * Current tenant (pharmacy) ID for the logged-in user.
+ * Returns null for superadmin (who is not bound to a pharmacy).
+ *
+ * Models MUST scope queries by this. Passing null effectively
+ * disables tenant scoping — only superadmin should see that.
+ */
+function currentPharmacyId() {
+    return $_SESSION['pharmacy_id'] ?? null;
+}
+
+/**
+ * Most controllers want a pharmacy to scope by. If a non-superadmin
+ * somehow ends up with no pharmacy_id, kick them out — that's a
+ * broken state, not something to silently default away.
+ */
+function requirePharmacy() {
+    requireLogin();
+    if (isSuperadmin()) return null;
+    $pid = currentPharmacyId();
+    if (!$pid) {
+        $_SESSION = [];
+        session_destroy();
+        redirect('index.php?page=login');
+    }
+    return (int)$pid;
 }
 
 /* -----------------------------------------------------------

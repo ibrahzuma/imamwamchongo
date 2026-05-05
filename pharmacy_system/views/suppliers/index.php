@@ -8,12 +8,10 @@
 </div>
 
 <div class="card"><div class="card-body table-responsive">
-    <table class="table table-hover align-middle">
-        <thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Address</th><th class="text-end">Actions</th></tr></thead>
+    <table class="table table-hover align-middle js-datatable" data-order='[[0,"asc"]]'>
+        <thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>Email</th><th>Address</th><th class="text-end dt-no-sort dt-no-export">Actions</th></tr></thead>
         <tbody>
-        <?php if (empty($suppliers)): ?>
-            <tr><td colspan="6" class="text-center text-muted py-4">No suppliers yet.</td></tr>
-        <?php else: foreach ($suppliers as $s): ?>
+        <?php foreach ($suppliers as $s): ?>
             <tr>
                 <td><strong><?= sanitize($s['name']) ?></strong>
                     <?php if (!$s['is_active']): ?><span class="badge bg-secondary">inactive</span><?php endif; ?>
@@ -27,11 +25,16 @@
                         <a href="<?= url('index.php?page=suppliers&action=edit&id=' . $s['id']) ?>" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
                     <?php endif; ?>
                     <?php if (hasRole(['admin'])): ?>
-                        <a href="<?= url('index.php?page=suppliers&action=delete&id=' . $s['id']) ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete supplier?')"><i class="bi bi-trash"></i></a>
+                        <form method="POST" action="<?= url('index.php?page=suppliers&action=delete') ?>" class="d-inline"
+                              onsubmit="return confirm('Delete supplier?');">
+                            <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
+                            <input type="hidden" name="id" value="<?= (int)$s['id'] ?>">
+                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                        </form>
                     <?php endif; ?>
                 </td>
             </tr>
-        <?php endforeach; endif; ?>
+        <?php endforeach; ?>
         </tbody>
     </table>
 </div></div>

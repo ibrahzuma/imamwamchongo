@@ -46,7 +46,9 @@
 
             <div class="mt-4 small text-muted">
                 <strong>Demo accounts</strong> (password: <code>password123</code>):<br>
-                admin · pharmacist · cashier
+                <em>Platform:</em> superadmin<br>
+                <em>PharmaCare Plus:</em> admin · pharmacist · cashier<br>
+                <em>MediLink Pharmacy:</em> medilink_admin
             </div>
         </div>
     </div>

@@ -7,6 +7,7 @@
 
     <div class="card mb-3">
         <div class="card-body">
+            <?php $selectedUser = (int)($_GET['user_id'] ?? 0); ?>
             <form method="GET" class="row g-3 align-items-end">
                 <input type="hidden" name="page" value="reports">
                 <input type="hidden" name="action" value="sales">
@@ -19,8 +20,23 @@
                     <input type="date" name="to" value="<?= htmlspecialchars($to) ?>" class="form-control">
                 </div>
                 <div class="col-md-3">
+                    <label class="form-label">Cashier / User</label>
+                    <select name="user_id" class="form-select">
+                        <option value="0">All users</option>
+                        <?php foreach ($cashiers as $c): ?>
+                            <option value="<?= (int)$c['id'] ?>" <?= $selectedUser === (int)$c['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($c['full_name']) ?> (<?= htmlspecialchars(ucfirst($c['role'])) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex flex-wrap gap-2">
                     <button class="btn btn-primary"><i class="bi bi-search"></i> Filter</button>
-                    <button type="button" onclick="window.print()" class="btn btn-outline-secondary"><i class="bi bi-printer"></i> Print</button>
+                    <a class="btn btn-primary"
+                       href="?page=reports&action=exportSalesPdf&from=<?= htmlspecialchars($from) ?>&to=<?= htmlspecialchars($to) ?>&user_id=<?= $selectedUser ?>"
+                       target="_blank">
+                        <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                    </a>
                 </div>
             </form>
         </div>
@@ -71,7 +87,7 @@
     <div class="card">
         <div class="card-header bg-light"><strong>Sales Transactions</strong></div>
         <div class="card-body">
-            <table class="table table-striped table-sm">
+            <table class="table table-striped table-sm js-datatable" data-order='[[1,"desc"]]'>
                 <thead>
                     <tr>
                         <th>Invoice #</th><th>Date</th><th>Customer</th><th>Cashier</th>
@@ -80,20 +96,18 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($sales)): ?>
-                        <tr><td colspan="8" class="text-center text-muted">No sales in this period</td></tr>
-                    <?php else: foreach ($sales as $s): ?>
+                    <?php foreach ($sales as $s): ?>
                         <tr>
                             <td><a href="?page=sales&action=invoice&id=<?= $s['id'] ?>"><?= htmlspecialchars($s['invoice_number']) ?></a></td>
-                            <td><?= dateFmt($s['sale_date'], 'd M Y H:i') ?></td>
+                            <td><?= dateFmt($s['created_at'], 'd M Y H:i') ?></td>
                             <td><?= htmlspecialchars($s['customer_name'] ?? 'Walk-in') ?></td>
-                            <td><?= htmlspecialchars($s['cashier_name'] ?? '-') ?></td>
+                            <td><?= htmlspecialchars($s['user_name'] ?? '-') ?></td>
                             <td class="text-end"><?= money($s['subtotal']) ?></td>
-                            <td class="text-end"><?= money($s['tax']) ?></td>
+                            <td class="text-end"><?= money($s['tax_amount']) ?></td>
                             <td class="text-end"><?= money($s['discount']) ?></td>
                             <td class="text-end"><strong><?= money($s['total']) ?></strong></td>
                         </tr>
-                    <?php endforeach; endif; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
@@ -106,10 +120,10 @@ document.addEventListener('DOMContentLoaded', function() {
     new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: <?= json_encode(array_column($byDate, 'date')) ?>,
+            labels: <?= json_encode(array_column($byDate, 'day')) ?>,
             datasets: [{
                 label: 'Sales (<?= CURRENCY ?>)',
-                data: <?= json_encode(array_column($byDate, 'total')) ?>,
+                data: <?= json_encode(array_column($byDate, 'revenue')) ?>,
                 backgroundColor: 'rgba(10, 77, 104, 0.7)',
                 borderColor: '#0a4d68',
                 borderWidth: 1
