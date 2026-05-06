@@ -26,15 +26,18 @@ class SaleController {
      */
     public function pos() {
         requireRole(['admin','pharmacist','cashier']);
-        // Default tax rate (per-pharmacy override, fallback to global)
+        // Default tax rate (per-pharmacy override, fallback to global).
+        // Cached for 5 minutes — settings change rarely.
         $pid = currentPharmacyId();
-        $stmt = $this->db->prepare("
-            SELECT setting_value FROM settings
-            WHERE setting_key='default_tax_rate' AND (pharmacy_id = ? OR pharmacy_id IS NULL)
-            ORDER BY pharmacy_id IS NULL ASC LIMIT 1
-        ");
-        $stmt->execute([$pid]);
-        $taxRate = (float)$stmt->fetchColumn();
+        $taxRate = Cache::remember(Cache::tenantKey($pid, 'settings:default_tax_rate'), 300, function () use ($pid) {
+            $stmt = $this->db->prepare("
+                SELECT setting_value FROM settings
+                WHERE setting_key='default_tax_rate' AND (pharmacy_id = ? OR pharmacy_id IS NULL)
+                ORDER BY pharmacy_id IS NULL ASC LIMIT 1
+            ");
+            $stmt->execute([$pid]);
+            return (float)$stmt->fetchColumn();
+        });
         require __DIR__ . '/../views/sales/pos.php';
     }
 
@@ -67,6 +70,9 @@ class SaleController {
                 'notes'          => $data['notes']          ?? null,
             ];
             $result = $this->sale->create($payload, $data['items']);
+
+            // Bust cached dashboard / list views for this pharmacy
+            Cache::bumpPharmacyVersion(currentPharmacyId());
 
             // Broadcast to every browser bound to this pharmacy
             RealtimeHub::publish(currentPharmacyId(), 'sale.created', [

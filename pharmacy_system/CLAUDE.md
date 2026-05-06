@@ -42,6 +42,30 @@ composer require tecnickcom/tcpdf
 
 If TCPDF isn't found, clicking Export PDF flashes an error and redirects back to Reports — the rest of the app keeps working.
 
+### Caching (lib/Cache.php)
+
+Tiny in-process cache loaded automatically by `config/config.php`:
+
+- **File-backed** primary store (`cache/` directory, .htaccess-blocked from HTTP).
+- **APCu fast-path** is used opportunistically when the extension is loaded — no setup required, falls back to file-only if absent.
+- **Tenant invalidation** uses a per-pharmacy version counter, NOT prefix scanning. Every cache key includes the current version: `Cache::tenantKey(5, 'dashboard:kpis')` → `p:5:v3:dashboard:kpis`. Calling `Cache::bumpPharmacyVersion(5)` increments to v4 in one write, making every prior cache entry for pharmacy 5 unreachable. Old files expire on their own TTL — that's the trade-off for O(1) invalidation.
+
+**Usage:**
+
+```php
+$kpis = Cache::remember(Cache::tenantKey($pid, 'dashboard:kpis'), 60, function () {
+    return computeExpensiveKpis();
+});
+```
+
+**Currently cached:**
+- `DashboardController::index` — full KPI bundle (60s TTL).
+- `SaleController::pos` — `default_tax_rate` setting lookup (300s TTL).
+
+**Invalidation hooks** are in every controller that mutates data — Sale/Purchase/Inventory/Medicine/Category/Supplier/User controllers each call `Cache::bumpPharmacyVersion(currentPharmacyId())` after a successful write, right next to the realtime publish. So a sale fires both: cache version bumped + WS event. Browsers reload, get fresh data.
+
+**Adding a new cache hit:** prefer `Cache::remember(Cache::tenantKey(...), $ttl, fn() => ...)` for tenant-scoped data. For platform-wide data (e.g. superadmin views), use a plain key like `Cache::remember('platform:pharmacies', 60, ...)` and remember to `Cache::forget('platform:pharmacies')` on writes (no auto-invalidation for platform-scoped keys).
+
 ### Realtime updates (WebSockets via Ratchet)
 
 The app uses a long-running PHP daemon for realtime updates (`sale.created`, `purchase.created`, `stock.adjusted`, `low.stock`). Architecture:

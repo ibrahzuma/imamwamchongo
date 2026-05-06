@@ -60,6 +60,7 @@ class UserController {
         }
 
         $this->user->create($payload);
+        Cache::bumpPharmacyVersion(currentPharmacyId());
         flash('success', 'User created.');
         redirect('index.php?page=users');
     }
@@ -98,6 +99,7 @@ class UserController {
             redirect("index.php?page=users&action=edit&id=$id");
         }
         $this->user->update($id, $_POST, $pid);
+        Cache::bumpPharmacyVersion($pid);
         flash('success','User updated.');
         redirect('index.php?page=users');
     }
@@ -115,6 +117,7 @@ class UserController {
         }
         try {
             $this->user->delete($id, currentPharmacyId());
+            Cache::bumpPharmacyVersion(currentPharmacyId());
             flash('success','User deleted.');
         } catch (Exception $e) {
             flash('error','Cannot delete user (has related records).');

@@ -4,9 +4,14 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="mb-0"><i class="bi bi-capsule"></i> Medicines</h3>
     <?php if (hasRole(['admin','pharmacist'])): ?>
-        <a href="<?= url('index.php?page=medicines&action=create') ?>" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Add Medicine
-        </a>
+        <div class="btn-group">
+            <a href="<?= url('index.php?page=medicines&action=bulkImport') ?>" class="btn btn-outline-primary">
+                <i class="bi bi-cloud-upload"></i> Bulk Import
+            </a>
+            <a href="<?= url('index.php?page=medicines&action=create') ?>" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Medicine
+            </a>
+        </div>
     <?php endif; ?>
 </div>
 

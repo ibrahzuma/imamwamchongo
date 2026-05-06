@@ -36,6 +36,7 @@ define('BASE_URL', getBaseUrl());
 define('CURRENCY', 'TZS');
 
 require_once __DIR__ . '/database.php';
+require_once __DIR__ . '/../lib/Cache.php';
 
 /* -----------------------------------------------------------
  *  URL & PATH HELPERS

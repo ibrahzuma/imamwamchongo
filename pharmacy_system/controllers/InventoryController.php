@@ -46,6 +46,8 @@ class InventoryController {
 
         $this->medicine->adjustStock($medicineId, $qty, $type, 'manual', null, $_SESSION['user_id'], $notes);
 
+        Cache::bumpPharmacyVersion(currentPharmacyId());
+
         // Look up the medicine name + new quantity for the realtime event
         $stmt = $this->db->prepare("SELECT name, quantity FROM medicines WHERE id = ? AND pharmacy_id = ?");
         $stmt->execute([$medicineId, currentPharmacyId()]);

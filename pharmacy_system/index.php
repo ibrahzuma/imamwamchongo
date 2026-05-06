@@ -89,6 +89,9 @@ $methodMap = [
     'exportSalesPdf'    => 'exportSalesPdf',
     'exportInventoryPdf'=> 'exportInventoryPdf',
     'exportExpiryPdf'   => 'exportExpiryPdf',
+    'bulkImport'        => 'bulkImport',
+    'downloadTemplate'  => 'downloadTemplate',
+    'bulkStore'         => 'bulkStore',
 ];
 
 $method = $methodMap[$action] ?? 'index';

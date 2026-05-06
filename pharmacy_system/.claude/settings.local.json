@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(robocopy \"C:\\\\Users\\\\admin\\\\Downloads\\\\imamwamchongo\\\\pharmacy_system\" \"C:\\\\xampp\\\\htdocs\\\\pharmacy_system\" /E /R:0 /NFL /NDL /NJH /NJS; Write-Output \"Robocopy exit code: $LASTEXITCODE\")"
+      "PowerShell(robocopy \"C:\\\\Users\\\\admin\\\\Downloads\\\\imamwamchongo\\\\pharmacy_system\" \"C:\\\\xampp\\\\htdocs\\\\pharmacy_system\" /E /R:0 /NFL /NDL /NJH /NJS; Write-Output \"Robocopy exit code: $LASTEXITCODE\")",
+      "Bash(php -l C:/Users/admin/Downloads/imamwamchongo/pharmacy_system/controllers/MedicineController.php)",
+      "Bash(php -l C:/Users/admin/Downloads/imamwamchongo/pharmacy_system/views/medicines/bulk.php)",
+      "Bash(php -l C:/Users/admin/Downloads/imamwamchongo/pharmacy_system/views/medicines/index.php)",
+      "Bash(php -l C:/Users/admin/Downloads/imamwamchongo/pharmacy_system/index.php)"
     ]
   }
 }

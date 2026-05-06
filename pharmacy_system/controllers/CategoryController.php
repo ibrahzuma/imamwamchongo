@@ -37,6 +37,7 @@ class CategoryController {
             redirect('index.php?page=categories&action=create');
         }
         $this->category->create($_POST);
+        Cache::bumpPharmacyVersion(currentPharmacyId());
         flash('success', 'Category added.');
         redirect('index.php?page=categories');
     }
@@ -61,6 +62,7 @@ class CategoryController {
             redirect("index.php?page=categories&action=edit&id=$id");
         }
         $this->category->update($id, $_POST);
+        Cache::bumpPharmacyVersion(currentPharmacyId());
         flash('success', 'Category updated.');
         redirect('index.php?page=categories');
     }
@@ -74,6 +76,7 @@ class CategoryController {
         $id = (int)($_POST['id'] ?? 0);
         try {
             $this->category->delete($id);
+            Cache::bumpPharmacyVersion(currentPharmacyId());
             flash('success', 'Category deleted.');
         } catch (Exception $e) {
             flash('error', 'Cannot delete: category is referenced by medicines.');

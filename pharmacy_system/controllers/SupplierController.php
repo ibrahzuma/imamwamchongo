@@ -35,6 +35,7 @@ class SupplierController {
             redirect('index.php?page=suppliers&action=create');
         }
         $this->supplier->create($_POST);
+        Cache::bumpPharmacyVersion(currentPharmacyId());
         flash('success', 'Supplier added.');
         redirect('index.php?page=suppliers');
     }
@@ -55,6 +56,7 @@ class SupplierController {
         }
         $id = (int)($_POST['id'] ?? 0);
         $this->supplier->update($id, $_POST);
+        Cache::bumpPharmacyVersion(currentPharmacyId());
         flash('success', 'Supplier updated.');
         redirect('index.php?page=suppliers');
     }
@@ -68,6 +70,7 @@ class SupplierController {
         $id = (int)($_POST['id'] ?? 0);
         try {
             $this->supplier->delete($id);
+            Cache::bumpPharmacyVersion(currentPharmacyId());
             flash('success', 'Supplier deleted.');
         } catch (Exception $e) {
             flash('error', 'Cannot delete: supplier has related records.');

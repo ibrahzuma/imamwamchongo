@@ -55,6 +55,8 @@ class PurchaseController {
             ];
             $result = $this->purchase->create($payload, $data['items']);
 
+            Cache::bumpPharmacyVersion(currentPharmacyId());
+
             RealtimeHub::publish(currentPharmacyId(), 'purchase.created', [
                 'reference' => $result['reference_number'],
                 'total'     => money($result['total']),
